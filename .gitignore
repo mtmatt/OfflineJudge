@@ -35,8 +35,20 @@
 *.in
 *.err
 
+# Vscode
+.vscode/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+CMakeOutput.log
+CMakeError.log
+CMakeLists.txt.user
+build/
+
 # Mac
 *.DS_Store
 
 # Exe
 Run
+output.info

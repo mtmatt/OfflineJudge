@@ -1,8 +1,8 @@
+#include <csignal>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <sys/resource.h>
-#include <unistd.h>
 #include <future>
 #include <unistd.h>
 
@@ -51,6 +51,13 @@ struct UserInfo {
 };
 
 class CompileCommandNotFound: public std::exception {
+public:
+    const char* what() const noexcept {
+        return "Need argument: compile command";
+    }
+};
+
+class ExecuteCommandNotFound: public std::exception {
 public:
     const char* what() const noexcept {
         return "Need argument: compile command";
@@ -147,7 +154,7 @@ int RunTestCase(int testCase, int timeLimit, std::vector<int> &costTime, std::ve
     } while(ready != std::future_status::ready);
     
     if(ready != std::future_status::ready) {
-        std::system(("kill -9 " + std::to_string(futPid.get())).c_str());
+        kill(futPid.get(), 9);
         run.join();
         costTime[testCase] = timeLimit + 50;
         costMemory[testCase] = 0;
@@ -423,6 +430,13 @@ void RunSolution(UserInfo userInfo) {
     }
 }
 
+void PrintUsage() {
+    std::cout << "Usage: ./Run <need compile> <compile command> <execute command>" << "\n";
+    std::cout << "Example: ./Run" << "\n";
+    std::cout << "         ./Run true make ./Solution/Sol" << "\n";
+    std::cout << "         ./Run false \"python3 ./Solution/Sol.py\"" << "\n";
+    std::cout << std::flush;
+}
 
 UserInfo GetUserInfo(int argc, char *argv[]) {
     UserInfo userInfo;
@@ -431,6 +445,7 @@ UserInfo GetUserInfo(int argc, char *argv[]) {
             if (argc >= 3)
                 userInfo.compileCommand = argv[2];
             else {
+                PrintUsage();
                 throw CompileCommandNotFound();
             }
             if (argc >= 4) {
@@ -441,6 +456,9 @@ UserInfo GetUserInfo(int argc, char *argv[]) {
             userInfo.needCompile = "false";
             if (argc >= 3) {
                 userInfo.executeCommand = argv[2];
+            } else {
+                PrintUsage();
+                throw ExecuteCommandNotFound();
             }
         }
     }
