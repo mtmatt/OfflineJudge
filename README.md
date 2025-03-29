@@ -32,7 +32,7 @@
 
 ### 截圖
 
-![AC](https://live.staticflickr.com/65535/52131824719_f3ef187894_o.png)
+<img src="https://live.staticflickr.com/65535/54417317278_df7ec42ab4_h.jpg" alt="OfflineJudge"/>
 
 ## 使用(出題者)
 

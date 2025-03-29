@@ -1,12 +1,14 @@
 #!/bin/bash
 
 mkdir build
-cd build
+cd build || exit
 cmake ..
 make -j
 
 cp Run ../
-cd ..
+cd .. || exit
 
-./Run
+printf "Command: ./Run %s %s %s\n" "$1" "$2" "$3"
+
+./Run $1 "$2" "$3"
 rm Run
