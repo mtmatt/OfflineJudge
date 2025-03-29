@@ -15,8 +15,13 @@
 #include <iomanip>
 #include <map>
 #include <pthread.h>
-#include "src/color.h"
-#include "src/rng.h"
+#include "color.h"
+#include "rng.h"
+
+#include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/screen.hpp>
+#include "ftxui/dom/node.hpp"
+#include "ftxui/screen/color.hpp"
 
 using time_point = std::chrono::steady_clock::time_point;
 
@@ -363,6 +368,7 @@ void ShowIndividualResult(
 }
 
 void RunSolution(UserInfo userInfo) {
+    using namespace ftxui;
     std::string problemID;
     int testCases, timeLimit;
     double multiplier;
@@ -383,16 +389,25 @@ void RunSolution(UserInfo userInfo) {
     multiplier = FixTimeLimit(timeLimit);
     timeLimit *= multiplier;
 
-    std::cout << "Running TestCase..." << "\n";
-
     std::vector<int> costTime(testCases + 1);
     std::vector<int> costMemory(testCases + 1);
     std::vector<int> outputStatus(testCases + 1);
     for(int i = 1; i <= testCases; ++i) {
         int st = RunTestCase(i, timeLimit, costTime, costMemory, userInfo.executeCommand);
         outputStatus[i] = st;
-        std::cout << i << " " << std::flush;
+        
+        float percentage = static_cast<float>(i) / testCases;
+        std::string testCaseStr = std::to_string(i) + "/" + std::to_string(testCases);
+        auto progress = hbox({
+            text("Running TestCase: "),
+            gauge(percentage) | flex,
+            text(" " + testCaseStr),
+        });
+        auto screen = Screen(80, 1);
+        Render(screen, progress);
+        std::cout << screen.ToString() << std::flush << screen.ResetPosition();
     }
+    std::cout << std::endl;
 
     int correct = 0;
     bool allCorrect = true;

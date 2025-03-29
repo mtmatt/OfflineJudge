@@ -10,9 +10,10 @@ int main() {
     int a, b;
     cin >> a >> b;
     cout << a + b;
-    if(a != 100) return 0;
-    while(true) {
-        cerr << "I am here.";
-        this_thread::sleep_for(chrono::milliseconds(3000));
+    for (int i = 0; i < 1000000000; ++i) {
+        a += i;
+        b += a;
+        a %= b;
     }
+    // cout << a + b << endl;
 }
