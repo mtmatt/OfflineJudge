@@ -11,12 +11,12 @@ struct Color {
     short red, green, blue;
     Color(int r = 0, int g = 0, int b = 0)
     : red(r), green(g), blue(b) {}
-    std::string get();
+    std::string get() const;
 };
 
 std::ostream& operator<<(std::ostream &out, const Color &color);
 
-inline std::string Color::get() {
+inline std::string Color::get() const {
     std::stringstream ss;
     ss << (*this);
     std::string ret;

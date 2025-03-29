@@ -15,5 +15,5 @@ int main() {
         b += a;
         a %= b;
     }
-    // cout << a + b << endl;
+    cout << a + b << endl;
 }

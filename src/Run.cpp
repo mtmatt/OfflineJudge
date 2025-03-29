@@ -34,12 +34,12 @@ const int TIME_OUT{4};
 const int RUNTIME_ERROR{8};
 const int MEMORY_OUT{16};
 
-const std::map<int, Color> RESULT{
-    {AC, Color(0x7A, 0xFF, 0x77)},
-    {TIME_OUT, Color(0x9F, 0xE2, 0xFF)},
-    {RUNTIME_ERROR, Color(0xAE, 0x9F, 0xFF)},
-    {MEMORY_OUT, Color(0x99, 0xE8, 0xE6)},
-    {WA, Color(0xFF, 0x41, 0x41)}
+const std::map<int, ftxui::Color> RESULT{
+    {AC, ftxui::Color::RGB(0x7A, 0xFF, 0x77)},
+    {TIME_OUT, ftxui::Color::RGB(0x9F, 0xE2, 0xFF)},
+    {RUNTIME_ERROR, ftxui::Color::RGB(0xAE, 0x9F, 0xFF)},
+    {MEMORY_OUT, ftxui::Color::RGB(0x99, 0xE8, 0xE6)},
+    {WA, ftxui::Color::RGB(0xFF, 0x41, 0x41)}
 };
 
 namespace fs = std::filesystem;
@@ -94,7 +94,6 @@ void RunCode(
         exit(ret);
     }
     struct rusage current_usage{0};
-    getrusage(RUSAGE_SELF, &current_usage);
     struct rusage child_usage{0};
     pid.set_value(processId);
     waitpid(processId, &execStatus, 0);
@@ -106,9 +105,9 @@ void RunCode(
         .count()};
 
 #ifdef __linux__
-    int memoryUsage = child_usage.ru_maxrss - current_usage.ru_maxrss;
+    int memoryUsage = child_usage.ru_maxrss;
 #elif defined(__APPLE__) || defined(__MACH__)
-    int memoryUsage = (child_usage.ru_maxrss - current_usage.ru_maxrss) / KB;
+    int memoryUsage = (child_usage.ru_maxrss) / KB;
 #endif
 
     memoryCost.set_value(memoryUsage);
@@ -233,6 +232,13 @@ double FindComputerSpeed() {
 }
 
 double FixTimeLimit(int timeLimit) {
+    using namespace ftxui;
+    auto document = vbox({
+        text("Fixing the time limit..."),
+    });
+    auto screen = Screen(80, 3);
+    Render(screen, document);
+    std::cout << screen.ToString() << std::flush << screen.ResetPosition();
     std::cout << "Fixing the time limit..." << "\n";
     
     const int TEST_NUM = 5;
@@ -241,12 +247,16 @@ double FixTimeLimit(int timeLimit) {
         average += FindComputerSpeed();
     }
     average /= TEST_NUM;
-
+    
     const double MY_TIME_COST = 0.3495;
     double multiplier = average / MY_TIME_COST;
-
-    std::cout << "Your Computer run " << std::setprecision(2) << 1.0 / multiplier 
-         << " time \nas fast as the judge." << "\n\n";
+    
+    document = vbox({
+        text("Your Computer run " + std::to_string(multiplier) + " time \nas fast as the judge."),
+    }) | border;
+    screen.Clear();
+    Render(screen, document);
+    std::cout << screen.ToString() << std::endl;
 
     return multiplier;
 }
@@ -277,52 +287,55 @@ bool CompileSolution(std::string compileCommand) {
 }
 
 void ShowTotalResult(bool allCorrect, int statusFlag, std::ostream &output) {
+    using namespace ftxui;
+    std::vector<Element> resultStr;
+    ftxui::Color result_color;
+    
     if(allCorrect) {
-        std::cout << RESULT.at(AC);
+        result_color = RESULT.at(AC);
         std::ifstream AC("Result/AC");
         std::string line;
         while(getline(AC, line)) {
-            std::cout << line << "\n";
+            resultStr.push_back(text(line));
             output << line << "\n";
         }
-        std::cout << RESET " " << std::flush;
     } else if(statusFlag & TIME_OUT) {
-        std::cout << RESULT.at(TIME_OUT);
+        result_color = RESULT.at(TIME_OUT);
         std::ifstream TLE("Result/TLE");
         std::string line;
         while(std::getline(TLE, line)) {
-            std::cout << line << "\n";
+            resultStr.push_back(text(line));
             output << line << "\n";
         }
-        std::cout << RESET " " << std::flush;
     } else if(statusFlag & MEMORY_OUT) {
-        std::cout << RESULT.at(MEMORY_OUT);
+        result_color = RESULT.at(MEMORY_OUT);
         std::ifstream MLE("Result/MLE");
         std::string line;
         while(std::getline(MLE, line)) {
-            std::cout << line << "\n";
+            resultStr.push_back(text(line));
             output << line << "\n";
         }
-        std::cout << RESET " " << std::flush;
     } else if(statusFlag & RUNTIME_ERROR) {
-        std::cout << RESULT.at(RUNTIME_ERROR);
+        result_color = RESULT.at(RUNTIME_ERROR);
         std::ifstream RE("Result/RE");
         std::string line;
         while(std::getline(RE, line)) {
-            std::cout << line << "\n";
+            resultStr.push_back(text(line));
             output << line << "\n";
         }
-        std::cout << RESET " " << std::flush;
     } else {
-        std::cout << RESULT.at(WA);
+        result_color = RESULT.at(WA);
         std::ifstream WA("Result/WA");
         std::string line;
         while(getline(WA, line)) {
-            std::cout << line << "\n";
+            resultStr.push_back(text(line));
             output << line << "\n";
         }
-        std::cout << RESET " " << std::flush;
     }
+    auto document = vbox(resultStr) | center | color(result_color) | border;
+    auto screen = Screen(80, 9);
+    Render(screen, document);
+    std::cout << screen.ToString() << std::endl;
 }
 
 bool CheckMLE(int testCase) {
@@ -340,12 +353,15 @@ void ShowIndividualResult(
     std::ostream &output
 ) {
     std::map<int, std::string> ret;
-    ret[WA] = "WA";
     ret[AC] = "AC";
+    ret[WA] = "WA";
     ret[TIME_OUT] = "TLE";
     ret[RUNTIME_ERROR] = "RE";
     ret[MEMORY_OUT] = "MLE";
-    std::cout << "For each testcase : " << "\n\n";
+
+    std::vector<ftxui::Element> testcaseResults;    
+    testcaseResults.push_back(ftxui::text("For each testcase: "));
+    testcaseResults.push_back(ftxui::separator());
     output << "For each testcase : " << "\n\n";
 
     for(int i = 1; i <= testCases; ++i) {
@@ -353,18 +369,30 @@ void ShowIndividualResult(
     }
 
     for(int i = 1; i <= testCases; ++i) {
-        std::cout << std::right << std::setw(3) << i << ". " << std::flush;
-        std::cout << RESULT.at(outputStatus[i]) << std::flush;
-        std::cout << std::setw(4) << ret[outputStatus[i]] << RESET "  " << std::flush;
-        std::cout << "Execution time : " << std::right << std::setw(4) << costTime[i] << " ms" 
-            << "  Memory : " << std::right << std::setw(8) << costMemory[i] << " KB"
-            << std::endl;
+        using namespace ftxui;
+        auto testcaseNumberText = text(std::to_string(i) + ". ");
+        auto resultText = text(ret[outputStatus[i]]) | 
+            color(RESULT.at(outputStatus[i]));
+        auto timeText = text("Time: " + std::to_string(costTime[i]) + " ms");
+        auto memoryText = text("Memory: " + std::to_string(costMemory[i]) + " KB");
+        auto testcaseResult = hbox({
+            testcaseNumberText | size(WIDTH, EQUAL, 5),
+            resultText | size(WIDTH, EQUAL, 10),
+            timeText | flex,
+            memoryText | flex
+        });
+        testcaseResults.push_back(testcaseResult);
+        
         output << std::right << std::setw(3) << i << ". " << std::flush;
         output << std::setw(4) << ret[outputStatus[i]] << "  " << std::flush;
         output << "Execution time : " << std::right << std::setw(8) << costTime[i] << " ms" 
             << "  Memory : " << std::right << std::setw(4) << costMemory[i] << " KB"
             << std::endl;
     }
+    auto document = ftxui::vbox(testcaseResults) | ftxui::border;
+    auto screen = ftxui::Screen(80, testCases + 2 + 2);
+    Render(screen, document);
+    std::cout << screen.ToString() << std::endl;
 }
 
 void RunSolution(UserInfo userInfo) {
@@ -377,8 +405,13 @@ void RunSolution(UserInfo userInfo) {
 
     std::ofstream output("output.info");
 
-    std::cout << "Problem ID : " << problemID << "\n";
-    std::cout << "There're " << testCases << " testcases." << "\n" << std::endl;
+    auto document = vbox({
+        text("Problem ID : " + problemID),
+        text("There're " + std::to_string(testCases) + " testcases."),
+    }) | border;
+    auto screen = Screen(80, 4);
+    Render(screen, document);
+    std::cout << screen.ToString() << std::endl;
 
     output << "Problem ID : " << problemID << "\n";
     output << "There're " << testCases << " testcases." << "\n";
@@ -431,18 +464,26 @@ void RunSolution(UserInfo userInfo) {
     
     ShowTotalResult(allCorrect, statusFlag, output);
     ShowIndividualResult(testCases, outputStatus, costTime, costMemory, multiplier, output);
-
-    std::cout << "\nTotal score : " << std::fixed << std::setprecision(2) << (double)correct / testCases * 100 << std::endl;
+    double score = (double)correct / testCases * 100;
+    std::string scoreStr = "Total score: " + std::to_string(score).substr(0, std::to_string(score).find(".") + 3);
+    
+    auto scoreText = ftxui::text(scoreStr) | ftxui::bold;
+    document = ftxui::vbox({scoreText}) | ftxui::border;
+    
+    
     output << "\nTotal score : " << std::fixed << std::setprecision(2) << (double)correct / testCases * 100 << std::endl;
-
-    std::cout << std::endl;
     output << std::endl;
-
     if(allCorrect) {
         std::string code = Encode();
-        std::cout<<"AC code : " << code << std::endl;
+        document = ftxui::vbox({
+            scoreText,
+            ftxui::text("AC code : " + code),
+        }) | ftxui::border;
         output << "AC code : " << code << std::endl;
     }
+    screen = ftxui::Screen(80, 3 + allCorrect);
+    ftxui::Render(screen, document);
+    std::cout << screen.ToString() << std::endl;
 }
 
 void PrintUsage() {
