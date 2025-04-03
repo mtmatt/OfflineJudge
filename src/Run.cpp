@@ -2,9 +2,10 @@
 #include <filesystem>
 #include <stdexcept>
 #include <string>
-#include <sys/resource.h>
 #include <future>
 #include <unistd.h>
+#include <sys/resource.h>
+#include <sys/wait.h>
 
 #include <iostream>
 #include <fstream>
@@ -15,7 +16,6 @@
 #include <iomanip>
 #include <map>
 #include <pthread.h>
-#include "color.h"
 #include "rng.h"
 
 #include <ftxui/dom/elements.hpp>
@@ -378,7 +378,7 @@ void ShowIndividualResult(
         auto testcaseResult = hbox({
             testcaseNumberText | size(WIDTH, EQUAL, 5),
             resultText | size(WIDTH, EQUAL, 10),
-            timeText | flex,
+            timeText | size(WIDTH, EQUAL, 20),
             memoryText | flex
         });
         testcaseResults.push_back(testcaseResult);
