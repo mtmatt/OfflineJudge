@@ -10,5 +10,9 @@ cd .. || exit
 
 printf "Command: ./Run %s %s %s\n" "$1" "$2" "$3"
 
-./Run $1 "$2" "$3"
+if [ "$1" == "" ]; then
+  ./Run
+else
+  ./Run "$1" "$2" "$3"
+fi
 rm Run
